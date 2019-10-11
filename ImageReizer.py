@@ -1,4 +1,3 @@
-
 # ==============
 # Import list
 # ==============
@@ -18,13 +17,18 @@ Prep variables
 ================
 """
 init()
-version = "1.0"
+version = "0.3"
 
 red = Fore.RED
 yellow = Fore.YELLOW
 cyan = Fore.CYAN
 green = Fore.GREEN
 reset = Style.RESET_ALL
+DeleteInputFiles = False
+CustomDimensions = "Custom"
+Width = False
+Height = False
+
 """
 =============
 Code begins
@@ -36,54 +40,121 @@ def init_run():
     print(f"{green}=================\n"
           f"  Image resizer\n"
           f"  version: {cyan}{version}{green}\n"
-          f"================={reset}\n")
-
-    print(f"{red}Program may be slow the more images you use. This usually happens around the prep & finishing stages"
-          f"{reset}")
+          f"================={reset}")
 
     InputFolder = "Input"
     if not os.path.exists(InputFolder):
-        print(f"NOTE: {yellow}-Creating {InputFolder} folder{reset}")
+        print(f"NOTE: {yellow}Creating {InputFolder} folder{reset}")
         os.makedirs(InputFolder)
 
         path = os.path.realpath(InputFolder)
         os.startfile(path)
-    input("PRESS ENTER TO CONTINUE")
-
-    file_conversion()
+    menu()
 
 
 def menu():
-    # User choices
-    print()
+    global DeleteInputFiles
+
+    print(f"{green}Deletion after finish: {cyan}{DeleteInputFiles} {reset}\n"
+          f"{green}Dimensions: {cyan}{CustomDimensions}{reset}\n")
+    print(f"{green}Choose your choice{reset}")
+    print(f"{green} 1.{cyan} Start program{reset}")
+    print(f"{green} 2.{cyan} Choose a set of listed dimensions{reset}")
+    # TODO: Add the deletion check of input folder at the end of the code
+    print(f"{green} 3.{cyan} Delete images from input when finished{reset}")
+    print(f"{green} 4.{cyan} Close Program{reset}")
+    print(f"{red}Program may be slow the more images you use. This usually happens around the prep & finishing stages"
+          f"{reset}")
+
+    i = input("Choice: ")
+
+    if int(i) == 1:
+        file_conversion()
+
+    elif int(i) == 2:
+        dimensions()
+
+    elif int(i) == 3:
+        print("Test")
+        DeleteInputFiles = True
+        menu()
+
+    elif int(i) == 4:
+        sys.exit()
+
+    elif i is not int:
+        print("Only use numbers\n")
+        menu()
+
+
+def dimensions():
+    global CustomDimensions
+    global Width
+    global Height
+
+    print(f"{yellow}Choose one of the following{reset}")
+    print(f" {yellow}1. {cyan}Custom dimensions{reset}")
+    print(f" {yellow}2. {cyan}1920 x 1080p{reset}")
+    print(f" {yellow}3. {cyan}1280 x 720p{reset}")
+
+    i = input("Choice: ")
+
+    if int(i) == 1:
+        CustomDimensions = "Custom"
+        print(f"Dimensions is now set to {CustomDimensions}!")
+        menu()
+
+    elif int(i) == 2:
+        CustomDimensions = "1920 x 1080p"
+        print(f"Dimensions is now set to {CustomDimensions}!")
+        Width = 1920
+        Height = 1080
+
+    elif int(i) == 3:
+        CustomDimensions = "1280 x 720p"
+        print(f"Dimensions is now set to {CustomDimensions}!")
+        Width = 1280
+        Height = 720
+
+    elif i is not int:
+        print("You must choose a number")
+        dimensions()
+
+    menu()
 
 
 def file_conversion():
-    isInt = False
-    try:
-        Width = input("Width: ")
-        Width = int(Width)
-    except:
-        print("Width needs to be a number and not contain any other characters")
-        file_conversion()
-    try:
-        Height = input("Height: ")
-        Height = int(Height)
-    except:
-        print("Height needs to be a number and not contain any other characters")
-        file_conversion()
+    global Width
+    global Height
+
+    if Width is not False and Height is not False:
+        pass
+    else:
+        try:
+            Width = input("Width: ")
+            Width = int(Width)
+        except:
+            print("Width needs to be a number and not contain any other characters")
+            file_conversion()
+        try:
+            Height = input("Height: ")
+            Height = int(Height)
+        except:
+            print("Height needs to be a number and not contain any other characters")
+            file_conversion()
 
     FromDirectory = "Input"
     ToDirectory = "TempResizingFolder"
 
     if not os.path.exists(ToDirectory):
-        print(f"NOTE: {yellow}-Creating {ToDirectory} folder{reset}")
+        print(f"NOTE: {yellow}Creating {ToDirectory} folder{reset}")
         os.makedirs(ToDirectory)
 
-    print(f"NOTE: Copying files from {FromDirectory} to {ToDirectory}.")
+    print(f"NOTE: {yellow}Copying files from {FromDirectory} to {ToDirectory}.{reset}")
     copy_tree(FromDirectory, ToDirectory)
 
-    print("Resizing images")
+    # TODO: Add the option to convert images into 32 bit depth
+    print(f"INFO: {yellow}Resizing images{reset}")
     path = f"{ToDirectory}\\"
     dirs = os.listdir(ToDirectory)
     for item in dirs:
@@ -95,68 +166,23 @@ def file_conversion():
 
     Output = "Output"
     if not os.path.exists(Output):
-        print(f"NOTE: {yellow}-Creating {Output} folder{reset}")
+        print(f"INFO: {yellow}Creating {Output} folder{reset}")
         os.makedirs(Output)
 
+    # TODO: Add a check to override files that already exist in output or to rename files
     FromTemp = ToDirectory
-    print(f"NOTE: Copying files from {FromTemp} to {Output}.\nPlease wait.")
-    copy_tree(FromTemp, Output)
+    print(f"NOTE: {cyan}Moving files from {FromTemp} to {Output}.\nPlease wait.{reset}")
+    Folder = glob.glob(f"{FromTemp}\\*.*")
+    for file in Folder:
+        print(f"INFO: {cyan}Moving {file} to Finished folder. {reset}")
+        shutil.move(file, Output)
+    print(f"NOTE: {yellow}Moved files from {FromTemp} to {Output}{reset}")
+
+    print(f"NOTE: {yellow}Deleting {FromTemp} folder{reset}")
+    os.rmdir(FromTemp)
 
     path = os.path.realpath(Output)
     os.startfile(path)
 
 
-
-
 init_run()
-
-
-def file_conversion_not_in_use():
-
-    files = glob.glob('Prep\\*.*')
-    for file in files:
-        print(f"INFO: {cyan}Renaming {file}{reset}")
-        parts = file.split(".")
-        new_name = "{}.png".format(parts[0])
-        try:
-            os.rename(file, new_name)
-        except:
-            os.replace(file, new_name)
-
-    print("Fixing color depth")
-    path = "Prep\\"
-    dirs = os.listdir("Prep")
-    for item in dirs:
-        if os.path.isfile(path + item):
-            print(f"INFO: {cyan}Fixing color depth for {item}{reset}")
-            im = Image.open(path + item).convert("RGBA")
-            im.save(path + item, "PNG")
-
-    if not os.path.exists("Finished"):
-        print(f"NOTE: {yellow}-Creating Finished folder{reset}")
-        os.makedirs("Finished")
-
-    Move1 = glob.glob("Prep\\*.*")
-    print("Moving files from Prep to Finished folder")
-    for file in Move1:
-        print(f"INFO: {cyan}Moving {file} to Finished folder. {reset}")
-        shutil.move(file, "Finished")
-    print("Moved files from Prep to Finished")
-
-    print(f"NOTE: {yellow}Deleting Prep folder{reset}")
-    os.rmdir("Prep")
-
-    Move2 = glob.glob("LSPTTemp\\*.*")
-    print("Moving files from LSPTTemp to Finished folder")
-    for file in Move2:
-        print(f"INFO: {cyan}Moving {file} to Finished folder. {reset}")
-        shutil.move(file, "Finished")
-    print("Moved files from LSPTTemp to Finished")
-
-    print(f"NOTE: {yellow}Deleting LSPTTemp folder{reset}")
-    os.rmdir("LSPTTemp")
-
-    sg.Popup("Done!\nYou can now move the photos to 76")
-    path = "Finished"
-    path = os.path.realpath(path)
-    os.startfile(path)
