@@ -9,6 +9,7 @@ import sys
 import glob
 import shutil
 from PIL import Image
+# TODO: Add argparse to the program.
 import argparse
 
 """
@@ -17,15 +18,17 @@ Prep variables
 ================
 """
 init()
-version = "0.3"
+version = "0.4"
 
 red = Fore.RED
 yellow = Fore.YELLOW
 cyan = Fore.CYAN
 green = Fore.GREEN
 reset = Style.RESET_ALL
+
 DeleteInputFiles = False
 CustomDimensions = "Custom"
+
 Width = False
 Height = False
 
@@ -55,13 +58,13 @@ def init_run():
 def menu():
     global DeleteInputFiles
 
-    print(f"{green}Deletion after finish: {cyan}{DeleteInputFiles} {reset}\n"
-          f"{green}Dimensions: {cyan}{CustomDimensions}{reset}\n")
+    print(f"{green}Deletion after finish: {cyan}{DeleteInputFiles} {reset}")
+    print(f"{green}Dimensions: {cyan}{CustomDimensions}{reset}\n")
+
     print(f"{green}Choose your choice{reset}")
     print(f"{green} 1.{cyan} Start program{reset}")
     print(f"{green} 2.{cyan} Choose a set of listed dimensions{reset}")
-    # TODO: Add the deletion check of input folder at the end of the code
-    print(f"{green} 3.{cyan} Delete images from input when finished{reset}")
+    print(f"{green} 3.{cyan} Toggle deletion of images from input folder when finished{reset}")
     print(f"{green} 4.{cyan} Close Program{reset}")
     print(f"{red}Program may be slow the more images you use. This usually happens around the prep & finishing stages"
           f"{reset}")
@@ -75,8 +78,10 @@ def menu():
         dimensions()
 
     elif int(i) == 3:
-        print("Test")
-        DeleteInputFiles = True
+        if DeleteInputFiles is True:
+            DeleteInputFiles = False
+        else:
+            DeleteInputFiles = True
         menu()
 
     elif int(i) == 4:
@@ -124,6 +129,7 @@ def dimensions():
 
 
 def file_conversion():
+    global DeleteInputFiles
     global Width
     global Height
 
@@ -171,15 +177,25 @@ def file_conversion():
 
     # TODO: Add a check to override files that already exist in output or to rename files
     FromTemp = ToDirectory
-    print(f"NOTE: {cyan}Moving files from {FromTemp} to {Output}.\nPlease wait.{reset}")
+    print(f"NOTE: {yellow}Moving files from {FromTemp} to {Output}.{reset}")
     Folder = glob.glob(f"{FromTemp}\\*.*")
     for file in Folder:
         print(f"INFO: {cyan}Moving {file} to Finished folder. {reset}")
         shutil.move(file, Output)
     print(f"NOTE: {yellow}Moved files from {FromTemp} to {Output}{reset}")
 
-    print(f"NOTE: {yellow}Deleting {FromTemp} folder{reset}")
-    os.rmdir(FromTemp)
+    try:
+        print(f"NOTE: {yellow}Deleting {FromTemp} folder{reset}")
+        os.rmdir(FromTemp)
+    except:
+        print(f"WARN: Unable to delete {FromTemp}")
+
+    if DeleteInputFiles is True:
+        try:
+            print(f"NOTE: {yellow}Deleting contents of {FromDirectory} folder{reset}")
+            shutil.rmtree(FromDirectory)
+        except:
+            print(f"WARN: Unable to delete some or all of {FromDirectory}'s folder content")
 
     path = os.path.realpath(Output)
     os.startfile(path)
