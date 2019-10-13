@@ -1,3 +1,6 @@
+#
+# This file is only intended to work on Windows.
+#
 # ==============
 # Import list
 # ==============
@@ -18,7 +21,7 @@ Prep variables
 ================
 """
 init()
-version = "0.4"
+version = "0.5"
 
 red = Fore.RED
 yellow = Fore.YELLOW
@@ -27,6 +30,7 @@ green = Fore.GREEN
 reset = Style.RESET_ALL
 
 DeleteInputFiles = False
+BitConversion = False
 CustomDimensions = "Custom"
 
 Width = False
@@ -57,15 +61,18 @@ def init_run():
 
 def menu():
     global DeleteInputFiles
+    global BitConversion
 
     print(f"{green}Deletion after finish: {cyan}{DeleteInputFiles} {reset}")
-    print(f"{green}Dimensions: {cyan}{CustomDimensions}{reset}\n")
+    print(f"{green}Dimensions: {cyan}{CustomDimensions}{reset}")
+    print(f"{green}32 color depth: {cyan}{BitConversion}{reset}\n")
 
     print(f"{green}Choose your choice{reset}")
     print(f"{green} 1.{cyan} Start program{reset}")
     print(f"{green} 2.{cyan} Choose a set of listed dimensions{reset}")
     print(f"{green} 3.{cyan} Toggle deletion of images from input folder when finished{reset}")
-    print(f"{green} 4.{cyan} Close Program{reset}")
+    print(f"{green} 4.{cyan} Toggle color 32 color depth conversion{reset}")
+    print(f"{green} 5.{cyan} Close Program{reset}")
     print(f"{red}Program may be slow the more images you use. This usually happens around the prep & finishing stages"
           f"{reset}")
 
@@ -85,6 +92,13 @@ def menu():
         menu()
 
     elif int(i) == 4:
+        if BitConversion is True:
+            BitConversion = False
+        else:
+            BitConversion = True
+        menu()
+
+    elif int(i) == 5:
         sys.exit()
 
     elif i is not int:
@@ -130,6 +144,7 @@ def dimensions():
 
 def file_conversion():
     global DeleteInputFiles
+    global BitConversion
     global Width
     global Height
 
@@ -159,14 +174,16 @@ def file_conversion():
     print(f"NOTE: {yellow}Copying files from {FromDirectory} to {ToDirectory}.{reset}")
     copy_tree(FromDirectory, ToDirectory)
 
-    # TODO: Add the option to convert images into 32 bit depth
     print(f"INFO: {yellow}Resizing images{reset}")
     path = f"{ToDirectory}\\"
     dirs = os.listdir(ToDirectory)
     for item in dirs:
         if os.path.isfile(path + item):
             print(f"INFO: {cyan}Resizing {item}{reset}")
-            im = Image.open(path + item)
+            if BitConversion is True:
+                im = Image.open(path + item).convert("RGBA")
+            else:
+                im = Image.open(path + item)
             imResize = im.resize((Width, Height), Image.ANTIALIAS)
             imResize.save(path + item, "PNG")
 
@@ -175,27 +192,81 @@ def file_conversion():
         print(f"INFO: {yellow}Creating {Output} folder{reset}")
         os.makedirs(Output)
 
-    # TODO: Add a check to override files that already exist in output or to rename files
     FromTemp = ToDirectory
     print(f"NOTE: {yellow}Moving files from {FromTemp} to {Output}.{reset}")
     Folder = glob.glob(f"{FromTemp}\\*.*")
+    OverwriteAll = False
+    PassLoop = False
     for file in Folder:
-        print(f"INFO: {cyan}Moving {file} to Finished folder. {reset}")
-        shutil.move(file, Output)
+        if OverwriteAll is True:
+            print(f"INFO: {cyan}Moving {file} to {Output} folder & overwriting existing file.{reset}")
+            Splitted = file.split("\\")
+            os.remove(f"{Output}\\{Splitted[1]}")
+            shutil.move(file, Output)
+        else:
+            try:
+                shutil.move(file, Output)
+                print(f"INFO: {cyan}Moving {file} to {Output} folder.{reset}")
+            except Exception as e:
+                if PassLoop is True:
+                    pass
+                else:
+                    # TODO: Allow merging of files with existing files
+                    print(f"WARN: {red}{e}{reset}")
+                    print(f"{yellow}You got 6 choices{reset}")
+                    print(f"{yellow} 1. {cyan}Overwrite the file{reset}")
+                    print(f"{yellow} 2. {cyan}Overwrite all files in the process{reset}")
+                    print(f"{yellow} 3. {cyan}Don't overwrite the file{reset}")
+                    print(f"{yellow} 4. {cyan}Don't overwrite any files.{reset}")
+
+                    i = input("Choice: ")
+
+                    if int(i) == 1:
+                        try:
+                            print(f"INFO {cyan}Overwriting {file} in {Output} folder{reset}")
+                            Splitted = file.split("\\")
+                            os.remove(f"{Output}\\{Splitted[1]}")
+                            shutil.move(file, Output)
+                        except Exception as e:
+                            print(e)
+
+                    elif int(i) == 2:
+                        print(f"INFO: {cyan}Program will now overwrite all files in {Output}{reset}")
+                        try:
+                            print(f"INFO {cyan}Overwriting {file} in {Output} folder{reset}")
+                            Splitted = file.split("\\")
+                            os.remove(f"{Output}\\{Splitted[1]}")
+                            shutil.move(file, Output)
+                        except Exception as e:
+                            print(e)
+                        OverwriteAll = True
+
+                    elif int(i) == 3:
+                        print("Ignoring file")
+
+                    elif int(i) == 4:
+                        print(f"INFO: {cyan}Now ignoring all existing files{reset}")
+                        PassLoop = True
+
+                    elif i is not int:
+                        print("Did not register any request. Passing")
+                        pass
+    # TODO: Add a counter to check if files got moved to output folder or not. Then if any files got moved.
+    #  Display print command. If files didn't get moved. Don't display it
     print(f"NOTE: {yellow}Moved files from {FromTemp} to {Output}{reset}")
 
     try:
         print(f"NOTE: {yellow}Deleting {FromTemp} folder{reset}")
         os.rmdir(FromTemp)
     except:
-        print(f"WARN: Unable to delete {FromTemp}")
+        print(f"WARN: {red}Unable to delete {FromTemp}{reset}")
 
     if DeleteInputFiles is True:
         try:
             print(f"NOTE: {yellow}Deleting contents of {FromDirectory} folder{reset}")
             shutil.rmtree(FromDirectory)
         except:
-            print(f"WARN: Unable to delete some or all of {FromDirectory}'s folder content")
+            print(f"WARN: {red}Unable to delete some or all of {FromDirectory}'s folder content{reset}")
 
     path = os.path.realpath(Output)
     os.startfile(path)
