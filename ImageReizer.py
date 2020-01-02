@@ -12,6 +12,8 @@ import sys
 import glob
 import shutil
 from PIL import Image
+import time
+import concurrent.futures
 # TODO: Add argparse to the program.
 import argparse
 
@@ -21,7 +23,7 @@ Prep variables
 ================
 """
 init()
-version = "0.5"
+version = "0.6"
 
 red = Fore.RED
 yellow = Fore.YELLOW
@@ -44,6 +46,9 @@ Code begins
 
 
 def init_run():
+    print()
+    global DeleteInputFiles
+    global BitConversion
     print(f"{green}=================\n"
           f"  Image resizer\n"
           f"  version: {cyan}{version}{green}\n"
@@ -56,12 +61,6 @@ def init_run():
 
         path = os.path.realpath(InputFolder)
         os.startfile(path)
-    menu()
-
-
-def menu():
-    global DeleteInputFiles
-    global BitConversion
 
     print(f"{green}Deletion after finish: {cyan}{DeleteInputFiles} {reset}")
     print(f"{green}Dimensions: {cyan}{CustomDimensions}{reset}")
@@ -76,10 +75,15 @@ def menu():
     print(f"{red}Program may be slow the more images you use. This usually happens around the prep & finishing stages"
           f"{reset}")
 
+
+def menu():
+    init_run()
+    global DeleteInputFiles
+    global BitConversion
     i = input("Choice: ")
 
     if int(i) == 1:
-        file_conversion()
+        return
 
     elif int(i) == 2:
         dimensions()
@@ -142,7 +146,7 @@ def dimensions():
     menu()
 
 
-def file_conversion():
+def file_conversion_prep():
     global DeleteInputFiles
     global BitConversion
     global Width
@@ -156,13 +160,13 @@ def file_conversion():
             Width = int(Width)
         except:
             print("Width needs to be a number and not contain any other characters")
-            file_conversion()
+            file_conversion_prep()
         try:
             Height = input("Height: ")
             Height = int(Height)
         except:
             print("Height needs to be a number and not contain any other characters")
-            file_conversion()
+            file_conversion_prep()
 
     FromDirectory = "Input"
     ToDirectory = "TempResizingFolder"
@@ -175,24 +179,28 @@ def file_conversion():
     copy_tree(FromDirectory, ToDirectory)
 
     print(f"INFO: {yellow}Resizing images{reset}")
-    path = f"{ToDirectory}\\"
-    dirs = os.listdir(ToDirectory)
-    for item in dirs:
-        if os.path.isfile(path + item):
-            print(f"INFO: {cyan}Resizing {item}{reset}")
-            if BitConversion is True:
-                im = Image.open(path + item).convert("RGBA")
-            else:
-                im = Image.open(path + item)
-            imResize = im.resize((Width, Height), Image.ANTIALIAS)
-            imResize.save(path + item, "PNG")
+    return f"{ToDirectory}\\", os.listdir(ToDirectory), FromDirectory
 
+
+def image_conversion(path, item, Width, Height):
+    global BitConversion
+    if os.path.isfile(path + item):
+        if BitConversion is True:
+            im = Image.open(path + item).convert("RGBA")
+        else:
+            im = Image.open(path + item)
+        imResize = im.resize((Width, Height), Image.ANTIALIAS)
+        imResize.save(path + item, "PNG")
+        return f"INFO: {cyan}Resized {item}{reset}"
+
+
+def final_stage(path, FromDirectory):
     Output = "Output"
     if not os.path.exists(Output):
         print(f"INFO: {yellow}Creating {Output} folder{reset}")
         os.makedirs(Output)
 
-    FromTemp = ToDirectory
+    FromTemp = path
     print(f"NOTE: {yellow}Moving files from {FromTemp} to {Output}.{reset}")
     Folder = glob.glob(f"{FromTemp}\\*.*")
     OverwriteAll = False
@@ -251,8 +259,8 @@ def file_conversion():
                     elif i is not int:
                         print("Did not register any request. Passing")
                         pass
-    # TODO: Add a counter to check if files got moved to output folder or not. Then if any files got moved.
-    #  Display print command. If files didn't get moved. Don't display it
+
+    #  TODO: Display print command. If files didn't get moved. Don't display it
     print(f"NOTE: {yellow}Moved files from {FromTemp} to {Output}{reset}")
 
     try:
@@ -268,8 +276,29 @@ def file_conversion():
         except:
             print(f"WARN: {red}Unable to delete some or all of {FromDirectory}'s folder content{reset}")
 
-    path = os.path.realpath(Output)
-    os.startfile(path)
+    output_folder = os.path.realpath(Output)
+    os.startfile(output_folder)
 
 
-init_run()
+def multi_process():
+
+    time_start = time.perf_counter()
+    path, dirs, FromDirectory = file_conversion_prep()
+
+    if __name__ == "__main__":
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            processes = []
+            for item in dirs:
+                process = executor.submit(image_conversion, path, item, Width, Height)
+                processes.append(process)
+
+            for f in processes:
+                print(f.result())
+
+    final_stage(path, FromDirectory)
+    time_end = time.perf_counter()
+    print(f"It took {round(time_end-time_start, 2)} second(s)!")
+
+
+menu()
+multi_process()
