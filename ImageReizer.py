@@ -117,8 +117,9 @@ def dimensions():
 
     print(f"{yellow}Choose one of the following{reset}")
     print(f" {yellow}1. {cyan}Custom dimensions{reset}")
-    print(f" {yellow}2. {cyan}1920 x 1080p{reset}")
-    print(f" {yellow}3. {cyan}1280 x 720p{reset}")
+    print(f" {yellow}2. {cyan}4K - 3840 x 2160p{reset}")
+    print(f" {yellow}3. {cyan}1920 x 1080p{reset}")
+    print(f" {yellow}4. {cyan}1280 x 720p{reset}")
 
     i = input("Choice: ")
 
@@ -128,12 +129,18 @@ def dimensions():
         menu()
 
     elif int(i) == 2:
+        CustomDimensions = "4K - 3840 x 2160p"
+        print(f"Dimensions is now set to {CustomDimensions}!")
+        Width = 3840
+        Height = 2160
+
+    elif int(i) == 3:
         CustomDimensions = "1920 x 1080p"
         print(f"Dimensions is now set to {CustomDimensions}!")
         Width = 1920
         Height = 1080
 
-    elif int(i) == 3:
+    elif int(i) == 4:
         CustomDimensions = "1280 x 720p"
         print(f"Dimensions is now set to {CustomDimensions}!")
         Width = 1280
@@ -189,7 +196,8 @@ def image_conversion(path, item, Width, Height):
             im = Image.open(path + item).convert("RGBA")
         else:
             im = Image.open(path + item)
-        imResize = im.resize((Width, Height), Image.ANTIALIAS)
+        imResize = im.resize((Width, Height), Image.NEAREST)
+        # TODO: Support JPG & GIFs
         imResize.save(path + item, "PNG")
         return f"INFO: {cyan}Resized {item}{reset}"
 
